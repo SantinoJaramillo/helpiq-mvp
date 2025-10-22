@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* behåll dina :root-variabler och body-stilar */
 :root {
   --background: #ffffff;
   --foreground: #171717;

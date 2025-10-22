@@ -1,12 +1,24 @@
-export const ALLOWED_ORIGIN = process.env.NEXT_PUBLIC_FRONTEND_ORIGIN ?? "*";
+import { NextResponse } from "next/server";
 
-export function withCORS(res: Response) {
-  res.headers.set("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
-  res.headers.set("Access-Control-Allow-Headers", "content-type, authorization");
-  res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+const FRONTEND_ORIGIN = process.env.NEXT_PUBLIC_FRONTEND_ORIGIN ?? "*";
+
+function defaultCorsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": FRONTEND_ORIGIN,
+    "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+}
+
+export function withCORS(res: NextResponse) {
+  const headers = defaultCorsHeaders();
+  for (const k of Object.keys(headers)) {
+    res.headers.set(k, (headers as any)[k]);
+  }
   return res;
 }
 
-export function preflight() {
-  return withCORS(new Response(null, { status: 204 }));
+export function handleOptions() {
+  const res = new NextResponse(null, { status: 204 });
+  return withCORS(res);
 }

@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
+import { withCORS, handleOptions } from "../_cors";
+
+export async function OPTIONS() {
+  return handleOptions();
+}
 
 export async function GET() {
-  const ok =
-    !!process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
-    !!process.env.SUPABASE_SERVICE_ROLE_KEY;
-  return NextResponse.json({ ok, url: process.env.NEXT_PUBLIC_SUPABASE_URL });
+  const payload = {
+    ok: true,
+    env: {
+      supabase_service_role: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      openai_api_key: !!process.env.OPENAI_API_KEY,
+    },
+  };
+  return withCORS(NextResponse.json(payload));
 }

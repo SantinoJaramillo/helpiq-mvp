@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { supabaseClient } from "../../lib/supabaseClient";
 
 type Msg = { role: "user" | "assistant" | "info"; text: string };
 
@@ -10,9 +11,7 @@ export default function ChatClient() {
   const mode = (sp.get("mode") as "manual" | "web") || "web";
   const manualId = sp.get("manualId") || undefined;
 
-  // TODO: ersätt med auth senare
-  const companyId = "demo-company";
-
+  const [companyId, setCompanyId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [lastQuestion, setLastQuestion] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -21,6 +20,37 @@ export default function ChatClient() {
   useEffect(() => {
     setMessages([{ role: "info", text: "Ställ en fråga för att börja." }]);
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data } = await supabaseClient.auth.getUser();
+        const user = data?.user ?? null;
+        if (!user) return;
+        const metaCompany = (user.user_metadata as any)?.company_id;
+        if (metaCompany) {
+          if (mounted) setCompanyId(metaCompany);
+          return;
+        }
+        const { data: profile, error } = await supabaseClient
+          .from("profiles")
+          .select("company_id")
+          .eq("id", user.id)
+          .single();
+        if (!error && profile?.company_id && mounted) {
+          setCompanyId(profile.company_id);
+        }
+      } catch {
+        // silent fallback
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const effectiveCompanyId = companyId ?? "demo-company";
 
   async function askBackend(curMode: "manual" | "web", text: string) {
     setLastQuestion(text);
@@ -31,7 +61,7 @@ export default function ChatClient() {
     const r = await fetch("/api/ask", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: curMode, text, manualId, companyId })
+      body: JSON.stringify({ mode: curMode, text, manualId, companyId: effectiveCompanyId })
     });
     const data = await r.json();
 

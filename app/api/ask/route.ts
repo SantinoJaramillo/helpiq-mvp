@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { makeManualAgent, makeWebAgent, askAgent } from "@/lib/agents";
 import { getVectorStoreId } from "@/lib/manuals";
+import { withCORS } from "../_cors";
 
 // Försök plocka text från olika möjliga fält/format i den SDK-version du har.
 function extractText(result: any): string {
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ debug: result });
     }
 
-    return NextResponse.json({ text: out });
+    return withCORS(NextResponse.json({ text: out }));
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "Okänt fel" }, { status: 500 });
   }
